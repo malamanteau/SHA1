@@ -35,13 +35,13 @@ public:
 	//std::tuple<uint64_t, uint64_t>           Tuple64x2();      // Truncated 128 bits
 	//std::tuple<uint64_t, uint64_t, uint32_t> Tuple64x2_32x1(); // Full      160 bits
 
-	static SHA1 NewUUID();
+	//static SHA1 NewUUID();
 
 private:
 	inline constexpr static uint64_t  arbitraryNumber() { return 0xA1DE7A1DE7A1DE70; } // "AIDEN AIDEN AIDEN 0" Should be arbitrary...
 	inline constexpr static bool      isBigEndian()     { return false; } // TODO: Implement this someday when we actually care about ARM and/or Sun-Solaris.
 
-	static std::atomic_uint64_t s_counter;
+	//static std::atomic_uint64_t s_counter;
 
 	void                        transformAcc();
 	std::array<uint32_t, 5>     currentHash();
@@ -305,14 +305,14 @@ SHA1::ArrayU32x4()
 //		(((uint64_t)hashTable[2]) << 64) & (uint64_t)hashTable[3] };
 //}
 
-inline SHA1 
-SHA1::NewUUID()
-{
-	SHA1 ret{};
-
-	ret.AccumulateDateTime();
-	ret.Accumulate(++s_counter);
-	ret.Accumulate(arbitraryNumber());
-
-	return ret;
-}
+//inline SHA1 
+//SHA1::NewUUID()
+//{
+//	SHA1 ret{};
+//
+//	ret.AccumulateDateTime();
+//	//ret.Accumulate(++s_counter);
+//	ret.Accumulate(arbitraryNumber());
+//
+//	return ret;
+//}
