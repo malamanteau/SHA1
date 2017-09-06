@@ -9,6 +9,10 @@
 #include <sstream>
 #include <iomanip>
 
+#ifdef SHA1_NS
+namespace SHA1_NS {
+#endif	
+
 class SHA1
 {
 public:
@@ -316,3 +320,7 @@ SHA1::ArrayU32x4()
 //
 //	return ret;
 //}
+
+#ifdef SHA1_NS
+}
+#endif	
