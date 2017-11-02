@@ -52,7 +52,7 @@ private:
 	uint32_t                    rotl(uint32_t value, uint32_t shift) const;
 
 	std::vector<uint8_t>        m_accumulator; // Never larger than 512 bytes.
-	std::array<uint32_t, 5>     m_accHash = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
+	std::array<uint32_t, 5>     m_accHash = {{ 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 }};
 };
 
 inline
