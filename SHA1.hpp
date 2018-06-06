@@ -1,13 +1,18 @@
 #pragma once
 
+#include <cstdint>
 #include <array>
 #include <vector>
 #include <string>
-#include <cstdint>
 #include <atomic>
 #include <chrono>
-#include <sstream>
-#include <iomanip>
+#include <random>
+#ifndef __cplusplus_cli
+	#include <thread>
+#endif
+//#include <sstream>
+//#include <iomanip>
+//#include <utility>
 
 #ifdef SHA1_NS
 namespace SHA1_NS {
@@ -39,26 +44,33 @@ public:
 	//std::tuple<uint64_t, uint64_t>           Tuple64x2();      // Truncated 128 bits
 	//std::tuple<uint64_t, uint64_t, uint32_t> Tuple64x2_32x1(); // Full      160 bits
 
-	//static SHA1 NewUUID();
+	static SHA1        NewUUID();
+	static std::string NewUUIDString();
 
 private:
-	inline constexpr static uint64_t  arbitraryNumber() { return 0xA1DE7A1DE7A1DE70; } // "AIDEN AIDEN AIDEN 0" Should be arbitrary...
-	inline constexpr static bool      isBigEndian()     { return false; } // TODO: Implement this someday when we actually care about ARM and/or Sun-Solaris.
+	std::vector<uint8_t>       m_accumulator; // Never larger than 512 bytes.
+	std::array<uint32_t, 5>    m_accHash = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
 
-	//static std::atomic_uint64_t s_counter;
+	void                       transformAcc();
+	std::array<uint32_t, 5>    currentHash();
+	uint32_t                   rotl(uint32_t value, uint32_t shift) const;
 
-	void                        transformAcc();
-	std::array<uint32_t, 5>     currentHash();
-	uint32_t                    rotl(uint32_t value, uint32_t shift) const;
+	static constexpr uint64_t  s_arbitraryNumber = 0xA1DE7A1DE7A1DE70; // "AIDEN AIDEN AIDEN 0" Should be arbitrary...
+	static constexpr bool      s_isBigEndian = false; // TODO: Implement this someday when we actually care about ARM and/or Sun-Solaris.
 
-	std::vector<uint8_t>        m_accumulator; // Never larger than 512 bytes.
-	std::array<uint32_t, 5>     m_accHash = {{ 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 }};
+	static uint64_t            getIncrementCounter() { static std::atomic_uint64_t instance = 0; return instance++; }
+	static uint64_t            getRandomNumber() 
+	{
+		static std::random_device r;
+		static std::default_random_engine eng{r()};
+		static std::uniform_int_distribution<uint64_t> urd(0, std::numeric_limits<uint64_t>::max());
+
+		return urd(eng); 
+	}
 };
 
 inline
 SHA1::SHA1()
-	: //m_accHash(), initialized inline!
-	  m_accumulator()
 {
 	m_accumulator.reserve(512);
 }
@@ -130,7 +142,7 @@ SHA1::Accumulate(uint8_t block)
 inline void
 SHA1::Accumulate(uint16_t block)
 {
-	if (isBigEndian())
+	if (s_isBigEndian)
 	{
 		Accumulate(uint8_t((block & 0xFF00) >> 4));
 		Accumulate(uint8_t( block & 0x00FF));
@@ -145,7 +157,7 @@ SHA1::Accumulate(uint16_t block)
 inline void
 SHA1::Accumulate(uint32_t block)
 {
-	if (isBigEndian())
+	if (s_isBigEndian)
 	{
 		Accumulate(uint8_t((block & 0xFF000000) >> 12));
 		Accumulate(uint8_t((block & 0x00FF0000) >> 8));
@@ -164,7 +176,7 @@ SHA1::Accumulate(uint32_t block)
 inline void
 SHA1::Accumulate(uint64_t block)
 {
-	if (isBigEndian())
+	if (s_isBigEndian)
 	{
 		Accumulate(uint8_t((block & 0xFF00000000000000) >> 28));
 		Accumulate(uint8_t((block & 0x00FF000000000000) >> 24));
@@ -309,17 +321,33 @@ SHA1::ArrayU32x4()
 //		(((uint64_t)hashTable[2]) << 64) & (uint64_t)hashTable[3] };
 //}
 
-//inline SHA1 
-//SHA1::NewUUID()
-//{
-//	SHA1 ret{};
-//
-//	ret.AccumulateDateTime();
-//	//ret.Accumulate(++s_counter);
-//	ret.Accumulate(arbitraryNumber());
-//
-//	return ret;
-//}
+inline SHA1 
+SHA1::NewUUID()
+{
+	static SHA1 ret{}; // Keep mutating as we go.
+
+	int somevar = 0;
+
+	/// Sources of randomness:
+	ret.Accumulate(s_arbitraryNumber);
+	ret.Accumulate((uintptr_t)&ret);
+	#ifndef __cplusplus_cli
+		ret.Accumulate(std::hash<std::thread::id>()(std::this_thread::get_id()));
+	#endif
+	ret.Accumulate((uintptr_t)&somevar);
+	ret.Accumulate(getIncrementCounter());
+
+	ret.Accumulate(getRandomNumber());
+	ret.AccumulateDateTime();
+		
+	return ret; // return a copy
+}
+
+inline std::string
+SHA1::NewUUIDString()
+{
+	return SHA1::NewUUID().String128Hyphenated();
+}
 
 #ifdef SHA1_NS
 }
