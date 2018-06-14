@@ -48,7 +48,7 @@ public:
 	static std::string NewUUIDString();
 
 private:
-	std::vector<uint8_t>       m_accumulator; // Never larger than 512 bytes.
+	std::vector<uint8_t>       m_accumulator; // Never larger than "s_bufferNumBytes" bytes.
 	std::array<uint32_t, 5>    m_accHash = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
 
 	void                       transformAcc();
@@ -57,6 +57,7 @@ private:
 
 	static constexpr uint64_t  s_arbitraryNumber = 0xA1DE7A1DE7A1DE70; // "AIDEN AIDEN AIDEN 0" Should be arbitrary...
 	static constexpr bool      s_isBigEndian = false; // TODO: Implement this someday when we actually care about ARM and/or Sun-Solaris.
+	static constexpr size_t    s_bufferNumBytes = 64; // MUST BE 64, unless you want to change the transformAcc() function.
 
 	static uint64_t            getIncrementCounter() { static std::atomic_uint64_t instance = 0; return instance++; }
 	static uint64_t            getRandomNumber() 
@@ -72,7 +73,7 @@ private:
 inline
 SHA1::SHA1()
 {
-	m_accumulator.reserve(512);
+	m_accumulator.reserve(s_bufferNumBytes);
 }
 
 inline uint32_t 
@@ -132,7 +133,7 @@ SHA1::Accumulate(uint8_t block)
 {
 	m_accumulator.push_back(block);
 
-	if (m_accumulator.size() == 512)
+	if (m_accumulator.size() == s_bufferNumBytes)
 	{
 		transformAcc();
 		m_accumulator.clear();
@@ -226,21 +227,18 @@ SHA1::currentHash()
 {
 	size_t sz = m_accumulator.size();
 
-	if (sz > 0)
-	{
-		std::array<uint32_t, 5> temp = m_accHash;
+	if (sz == 0)
+		return m_accHash;
 
-		m_accumulator.resize(512, 0_u8);
-		{
-			transformAcc();
-			std::swap(temp, m_accHash);
-		}
-		m_accumulator.resize(sz);
+	std::array<uint32_t, 5> lastHash = m_accHash;
 
-		return temp;
-	}
+	m_accumulator.resize(s_bufferNumBytes, 0_u8);
+	transformAcc(); // sets --> m_accHash
+	m_accumulator.resize(sz);
 
-	return m_accHash;
+	lastHash.swap(m_accHash);
+
+	return lastHash; // <--- now the new hash
 }
 
 inline void
@@ -339,7 +337,9 @@ SHA1::NewUUID()
 
 	ret.Accumulate(getRandomNumber());
 	ret.AccumulateDateTime();
-		
+	
+	//std::cerr << ret.String128Hyphenated() << " " << gic << " " << rn << std::endl;
+
 	return ret; // return a copy
 }
 
