@@ -11,7 +11,7 @@
 	#include <thread>
 #endif
 //#include <sstream>
-//#include <iomanip>
+#include <iomanip>
 //#include <utility>
 
 #ifdef SHA1_NS
