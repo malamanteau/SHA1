@@ -59,7 +59,7 @@ private:
 	static constexpr bool      s_isBigEndian = false; // TODO: Implement this someday when we actually care about ARM and/or Sun-Solaris.
 	static constexpr size_t    s_bufferNumBytes = 64; // MUST BE 64, unless you want to change the transformAcc() function.
 
-	static uint64_t            getIncrementCounter() { static std::atomic<uint64_t> instance = 0; return instance++; }
+	static uint64_t            getIncrementCounter() { static std::atomic<uint64_t> instance(0); return instance++; }
 	static uint64_t            getRandomNumber() 
 	{
 		static std::random_device r;
