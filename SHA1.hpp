@@ -328,11 +328,11 @@ SHA1::NewUUID()
 
 	/// Sources of randomness:
 	ret.Accumulate(s_arbitraryNumber);
-	ret.Accumulate((uintptr_t)&ret);
+	ret.Accumulate((uint64_t)&ret);
 	#ifndef __cplusplus_cli
-		ret.Accumulate(std::hash<std::thread::id>()(std::this_thread::get_id()));
+		ret.Accumulate((uint64_t) std::hash<std::thread::id>()(std::this_thread::get_id()));
 	#endif
-	ret.Accumulate((uintptr_t)&somevar);
+	ret.Accumulate((uint64_t)&somevar);
 	ret.Accumulate(getIncrementCounter());
 
 	ret.Accumulate(getRandomNumber());
